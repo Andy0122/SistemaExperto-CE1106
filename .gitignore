@@ -1,0 +1,11 @@
+# Archivos temporales de SWI-Prolog
+*~
+*.pl~
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuraciones locales de IDEs (opcional pero recomendado)
+.vscode/
+.idea/
