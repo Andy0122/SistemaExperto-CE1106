@@ -37,7 +37,12 @@ procesar_oracion(String, Intencion, AtributosEncontrados) :-
 % Atributos del Sistema
 % Define las palabras clave que se cruzan directamente con BD.pl
 % ------------------------------------------------------------------------------
-es_atributo(A) :- member(A,[tecnologia, matematicas, personas, problemas, rutina, arte, ciencia, naturaleza, escuchar, hablar, casa, hogar, compu, maquinas]).
+es_atributo(A) :- member(A,[
+    tecnologia, matematicas, personas, problemas, rutina, arte, ciencia, naturaleza,
+    escuchar, hablar, casa, hogar, compu, maquinas, calculo, gente, humanos,
+    investigacion, diseno, dibujo, numeros, organizacion, creatividad,
+    exteriores, plantas, oficina, escribir, ensenar, trabajar_bajo_presion, poco_estudio
+]).
 
 % ------------------------------------------------------------------------------
 % Utilidades de Normalización de Texto
@@ -73,12 +78,12 @@ diccionario(W) :- member(W,[
     soy, considero, estoy, estamos,
     mucho, muy, no, si, nada, bastante, demasiado, poco, super, realmente, siempre, nunca, menos, mas, realidad, bien, mal,
     matematicas, matematica, numeros, calculo, tecnologia, aparatos, computadoras, compu, maquinas, tecnologicos,
-    personas, gente, publico, humanos, problemas, acertijos, resolver,
+    personas, gente, publico, humanos, problemas, acertijos, resolver, interesan,
     rutina, oficina, repeticion, arte, diseno, dibujo, creatividad,
     ciencia, investigacion, naturaleza, animales, exteriores, plantas, casa, hogar,
     bueno, buena, habil, excelente, experto, experta, genial, habituado, acostumbrado, genio, crack, facil,
     malo, mala, pesimo, pesima, torpe, terrible, dificil,
-    escuchar, hablar, aprender, salir, dibujar, estudiar, trabajar, estar
+    escuchar, hablar, aprender, salir, dibujar, estudiar, trabajar, estar, trabajar_bajo_presion, presion, estres, poco_estudio
 ]).
 
 % ==============================================================================
@@ -164,5 +169,5 @@ adverbio_cantidad --> [mucho] | [muy] | [bastante] |[demasiado] | [super] | [rea
 verbo_ser --> [soy] |[considero] | [estoy] | [estamos].
 
 % Los verbos están tipados según su intención intrínseca
-verbo(si) --> [amo] | [encanta] | [encantan] |[fascina] | [fascinan] | [gusta] | [gustan] | [intereso] | [interesa] | [disfruto] | [prefiero] | [apasiona] |[apasionan] | [apaciona] | [apacionan] | [atrae] |[agrada] | [agradarme] | [descubriendo] | [descubro] | [da] |[dan].
+verbo(si) --> [amo] | [encanta] | [encantan] |[fascina] | [fascinan] | [gusta] | [gustan] | [intereso] | [interesa] | [interesan] | [disfruto] | [prefiero] | [apasiona] |[apasionan] | [apaciona] | [apacionan] | [atrae] |[agrada] | [agradarme] | [descubriendo] | [descubro] | [da] |[dan].
 verbo(no) --> [odio] | [detesto] | [aborrezco] | [aburre] | [aburren] | [desagrada] | [molesta] |[molestan] | [soporto] | [tolero] | [incomoda] | [incomodan].

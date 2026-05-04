@@ -5,9 +5,12 @@
 % el analizador sintáctico y los evalúa contra la base de datos (hechos) 
 % para encontrar la profesión más adecuada mediante backtracking.
 % ==============================================================================
-
-:- consult('BD.pl').
-:- consult('BNF.pl').
+:- encoding(utf8).
+:- set_prolog_flag(encoding, utf8).
+:- prolog_load_context(directory, FileDir),
+   directory_file_path(FileDir, 'BD.pl', BDPath),
+   directory_file_path(FileDir, 'BNF.pl', BNFPath),
+   ensure_loaded([BDPath, BNFPath]).
 
 % ------------------------------------------------------------------------------
 % UTILIDADES DE MANEJO DE LISTAS
@@ -60,3 +63,113 @@ recomendar_carrera(GustosUsuario, RechazosUsuario, CarreraRecomendada) :-
     % CONDICIÓN DE ÉXITO: Debe haber afinidad comprobada
     contar_coincidencias(GustosUsuario, PerfilCarrera, Coincidencias),
     Coincidencias > 0.
+
+% ------------------------------------------------------------------------------
+% INTERFAZ CONVERSACIONAL
+% Inicia una sesión interactiva en lenguaje natural con el usuario.
+% ------------------------------------------------------------------------------
+iniciar :-
+    writeln('Hola, sé que la tarea de buscar una carrera es difícil. ¡Estamos aquí para ayudarte!'),
+    writeln('Puedes escribir "salir" en cualquier momento para terminar.'),
+    catch(conversacion([], []), salir, writeln('Hasta pronto, gracias por usar OrientadorCE.')).
+
+conversacion(Gustos, Rechazos) :-
+    preguntas_secuencia(Preguntas),
+    procesar_preguntas(Preguntas, Gustos, Rechazos, GustosFinal, RechazosFinal),
+    recomendar_y_mostrar(GustosFinal, RechazosFinal).
+
+preguntas_secuencia([
+    pregunta('Dime qué te gusta.', []),
+    pregunta('¿Te gusta la tecnología y los computadores?', [tecnologia, compu, maquinas]),
+    pregunta('¿Te interesan la investigación y la ciencia?', [investigacion, ciencia]),
+    pregunta('¿Te gusta resolver problemas con números?', [problemas, calculo, matematicas]),
+    pregunta('¿Te interesa diseñar, dibujar o crear arte?', [diseno, dibujo, creatividad, arte]),
+    pregunta('¿Te atrae la naturaleza, las plantas o los animales?', [naturaleza, plantas, animales, exteriores]),
+    pregunta('¿Te gusta trabajar con personas y comunicarte?', [personas, gente, humanos, hablar, escuchar]),
+    pregunta('¿Te gusta escribir para el público o contar historias?', [escribir, publico]),
+    pregunta('¿Te gustaría trabajar en una oficina?', [oficina]),    pregunta('¿Te gusta trabajar bajo presión o en situaciones de estrés?', [trabajar_bajo_presion]),    pregunta('¿Te interesa enseñar y tener paciencia?', [ensenar, paciencia]),
+    pregunta('¿Te molesta la rutina?', [rutina])
+]).
+
+procesar_preguntas([], Gustos, Rechazos, Gustos, Rechazos).
+procesar_preguntas([pregunta(Texto, Targets)|Resto], Gustos, Rechazos, GustosFinal, RechazosFinal) :-
+    preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, Gustos2, Rechazos2),
+    procesar_preguntas(Resto, Gustos2, Rechazos2, GustosFinal, RechazosFinal).
+
+preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut) :-
+    writeln(Texto),
+    leer_respuesta(Respuesta),
+    ( procesar_respuesta(Respuesta, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+    -> true
+    ; writeln('No entendí tu respuesta. Por favor intenta con otra frase.'),
+      preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+    ).
+
+leer_respuesta(Respuesta) :-
+    read_line_to_string(user_input, Raw),
+    string_lower(Raw, Lower),
+    normalize_space(string(Trim), Lower),
+    ( Trim = "salir" -> throw(salir) ; Respuesta = Trim ).
+
+procesar_respuesta(Respuesta, Targets, Gustos, Rechazos, GustosOut, RechazosOut) :-
+    ( procesar_oracion(Respuesta, Intencion, Atributos)
+    ; fallback_respuesta(Respuesta, Targets, Intencion, Atributos)
+    ),
+    interpretar_respuesta(Intencion, Respuesta, Targets, Atributos, AtributosFinal, IntencionFinal),
+    evalua_perfil(IntencionFinal, AtributosFinal, Gustos, Rechazos, GustosOut, RechazosOut),
+    respuesta_de_confirmacion(IntencionFinal, AtributosFinal).
+
+fallback_respuesta(Respuesta, Targets, Intencion, AtributosFinal) :-
+    string_lower(Respuesta, Lower),
+    split_string(Lower, " ,.?!", " ,.?!", Tokens),
+    maplist(atom_string, AtomTokens, Tokens),
+    ( member(no, AtomTokens), \+ member(si, AtomTokens) -> Intencion = no
+    ; member(si, AtomTokens), \+ member(no, AtomTokens) -> Intencion = si
+    ),
+    findall(A, (member(A, AtomTokens), es_atributo(A)), AtributosExtract),
+    ( AtributosExtract == [] -> AtributosFinal = Targets ; AtributosFinal = AtributosExtract ),
+    AtributosFinal \= [].
+
+interpretar_respuesta(desconocido, _, _, _, _, _) :-
+    !, fail.
+interpretar_respuesta(rechazo_directo, Respuesta, Targets, Atributos, AtributosFinal, IntencionFinal) :-
+    !,
+    mapear_intencion_directa(Respuesta, IntencionFinal),
+    AtributosFinal = Atributos,
+    ( AtributosFinal == [] -> AtributosFinal = Targets ; true ),
+    AtributosFinal \= [].
+interpretar_respuesta(Intencion, _, Targets, Atributos, AtributosFinal, Intencion) :-
+    AtributosFinal = Atributos,
+    ( AtributosFinal == [] -> AtributosFinal = Targets ; true ),
+    AtributosFinal \= [].
+
+mapear_intencion_directa(Respuesta, no) :- sub_atom(Respuesta, _, _, _, 'no'), !.
+mapear_intencion_directa(Respuesta, si) :- sub_atom(Respuesta, _, _, _, 'si'), !.
+mapear_intencion_directa(_, desconocido).
+
+respuesta_de_confirmacion(si, _) :-
+    format('Perfecto, lo tengo.~n', []),
+    !.
+respuesta_de_confirmacion(no, _) :-
+    format('Gracias por tu sinceridad.~n', []),
+    !.
+respuesta_de_confirmacion(_, _) :-
+    true.
+
+recomendar_y_mostrar(Gustos, Rechazos) :-
+    ( recomendar_carrera(Gustos, Rechazos, Carrera) ->
+        nombre_carrera(Carrera, Nombre),
+        format('Dadas tus preferencias te recomendaría estudiar ~w.~n', [Nombre])
+    ; writeln('No pude encontrar una carrera que cuadre con tus respuestas. Intenta describir mejor tus gustos.')
+    ).
+
+nombre_carrera(ingenieria_computadores, 'Ingeniería en Computadores').
+nombre_carrera(psicologia, 'Psicología').
+nombre_carrera(medicina, 'Medicina').
+nombre_carrera(arquitectura, 'Arquitectura').
+nombre_carrera(derecho, 'Derecho').
+nombre_carrera(administracion, 'Administración de Empresas').
+nombre_carrera(diseno_grafico, 'Diseño Gráfico').
+nombre_carrera(biologia, 'Biología').
+nombre_carrera(periodismo, 'Periodismo').
+nombre_carrera(educacion, 'Educación').
