@@ -131,7 +131,7 @@ procesar_respuesta(Respuesta, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
     evalua_perfil(IntencionFinal, AtributosFinal, Gustos, Rechazos, GustosOut, RechazosOut),
     respuesta_de_confirmacion(IntencionFinal, AtributosFinal).
 
-fallback_respuesta(Respuesta, Targets, Intencion, AtributosFinal) :-
+fallback_respuesta(Respuesta, _, Intencion, AtributosFinal) :-
     string_lower(Respuesta, Lower),
     split_string(Lower, " ,.?!", " ,.?!", Tokens),
     maplist(atom_string, AtomTokens, Tokens),
@@ -139,21 +139,20 @@ fallback_respuesta(Respuesta, Targets, Intencion, AtributosFinal) :-
     ; member(si, AtomTokens), \+ member(no, AtomTokens) -> Intencion = si
     ),
     findall(A, (member(A, AtomTokens), es_atributo(A)), AtributosExtract),
-    ( AtributosExtract == [] -> AtributosFinal = Targets ; AtributosFinal = AtributosExtract ),
-    AtributosFinal \= [].
+    AtributosExtract \=[],
+    AtributosFinal = AtributosExtract.
 
 interpretar_respuesta(desconocido, _, _, _, _, _) :-
     !, fail.
 interpretar_respuesta(rechazo_directo, Respuesta, Targets, Atributos, AtributosFinal, IntencionFinal) :-
     !,
     mapear_intencion_directa(Respuesta, IntencionFinal),
-    AtributosFinal = Atributos,
-    ( AtributosFinal == [] -> AtributosFinal = Targets ; true ),
-    AtributosFinal \= [].
+    ( Atributos ==[] -> AtributosFinal = Targets ; AtributosFinal = Atributos ),
+    AtributosFinal \=[].
 interpretar_respuesta(Intencion, _, Targets, Atributos, AtributosFinal, Intencion) :-
-    AtributosFinal = Atributos,
-    ( AtributosFinal == [] -> AtributosFinal = Targets ; true ),
-    AtributosFinal \= [].
+    % FIX: Evaluamos Atributos directamente para asignar a AtributosFinal una sola vez.
+    ( Atributos ==[] -> AtributosFinal = Targets ; AtributosFinal = Atributos ),
+    AtributosFinal \=[].
 
 mapear_intencion_directa(Respuesta, no) :- sub_atom(Respuesta, _, _, _, 'no'), !.
 mapear_intencion_directa(Respuesta, si) :- sub_atom(Respuesta, _, _, _, 'si'), !.

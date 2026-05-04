@@ -66,7 +66,7 @@ filtrar_diccionario([H|T],[H|T2]) :-
     diccionario(H), !, filtrar_diccionario(T, T2).
 filtrar_diccionario([_|T], T2) :- filtrar_diccionario(T, T2).
 
-% MEGA DICCIONARIO EXPANDIDO (Corpus Léxico)
+% DICCIONARIO (Corpus Léxico)
 diccionario(W) :- member(W,[
     yo, me, te, se, mi, la, las, los, el, un, una, con, por, de, lo, en, a, al, para, o,
     correcto, claro, exactamente, exacto, obvio,
