@@ -42,42 +42,27 @@ evalua_perfil(si, Atributos, GustosIn, RechazosIn, GustosOut, RechazosIn) :-
 evalua_perfil(no, Atributos, GustosIn, RechazosIn, GustosIn, RechazosOut) :-
     append(RechazosIn, Atributos, RechazosOut).
 
-evalua_perfil(rechazo_directo, _, Gustos, Rechazos, Gustos, Rechazos).
-evalua_perfil(desconocido, _, Gustos, Rechazos, Gustos, Rechazos).
-
 % ------------------------------------------------------------------------------
 % REGLA PRINCIPAL DEL SISTEMA EXPERTO
 % recomendar_carrera(+GustosUsuario, +RechazosUsuario, -CarreraRecomendada)
 % Ejecuta el motor lógico cruzando restricciones con la Base de Datos.
 % ------------------------------------------------------------------------------
 recomendar_carrera(GustosUsuario, RechazosUsuario, CarreraRecomendada) :-
-    % 1. findall recopila todas las carreras que cumplen las condiciones y las guarda en el formato Coincidencias-NombreCarrera
-    findall(Coincidencias-Carrera,
-            (
-                profesion(Carrera, Afinidades, Fortalezas, AntagoniasCarrera),
-                
-                % RESTRICCIÓN LÓGICA 1: El usuario NO debe detestar lo que la carrera exige
-                \+ interseccion_lista(RechazosUsuario, Afinidades),
-                \+ interseccion_lista(RechazosUsuario, Fortalezas),
-                
-                % RESTRICCIÓN LÓGICA 2: El usuario NO debe gustarle lo que la carrera rechaza
-                \+ interseccion_lista(GustosUsuario, AntagoniasCarrera),
-                
-                % CONDICIÓN DE ÉXITO: Debe haber afinidad comprobada
-                append(Afinidades, Fortalezas, PerfilCarrera),
-                contar_coincidencias(GustosUsuario, PerfilCarrera, Coincidencias),
-                Coincidencias > 0
-            ), 
-            ListaResultados),
+    % 1. Extrae una profesión de la BD
+    profesion(CarreraRecomendada, Afinidades, Fortalezas, AntagoniasCarrera),
     
-    % 2. Verificamos que al menos haya encontrado una carrera
-    ListaResultados \= [],
+    % 2. Une Afinidades y Fortalezas para hacer el perfil completo de la carrera
+    append(Afinidades, Fortalezas, PerfilCarrera),
     
-    % 3. keysort ordena la lista de menor a mayor cantidad de coincidencias
-    keysort(ListaResultados, ResultadosOrdenados),
+    % RESTRICCIÓN LÓGICA 1: El usuario NO debe detestar lo que la carrera exige
+    \+ interseccion_lista(RechazosUsuario, PerfilCarrera),
     
-    % 4. reverse le da la vuelta para extraer la de mayor coincidencia
-    reverse(ResultadosOrdenados, [_MaxCoincidencias-CarreraRecomendada | _]).
+    % RESTRICCIÓN LÓGICA 2: El usuario NO debe gustarle lo que la carrera rechaza
+    \+ interseccion_lista(GustosUsuario, AntagoniasCarrera),
+    
+    % CONDICIÓN DE ÉXITO: Debe haber afinidad comprobada
+    contar_coincidencias(GustosUsuario, PerfilCarrera, Coincidencias),
+    Coincidencias > 0.
 
 % ------------------------------------------------------------------------------
 % INTERFAZ CONVERSACIONAL
@@ -114,10 +99,22 @@ procesar_preguntas([pregunta(Texto, Targets)|Resto], Gustos, Rechazos, GustosFin
 preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut) :-
     writeln(Texto),
     leer_respuesta(Respuesta),
-    ( procesar_respuesta(Respuesta, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
-    -> true
-    ; writeln('No entendí tu respuesta. Por favor intenta con otra frase.'),
-      preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+    ( es_respuesta_directa_si_no(Respuesta) ->
+        writeln('No respondas solo "si" o "no". Escribe una frase más completa.'),
+        preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+    ; ( procesar_respuesta(Respuesta, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+      -> true
+      ; writeln('No entendí tu respuesta. Intenta expresarlo de otra forma.'),
+        preguntar_y_actualizar(Texto, Targets, Gustos, Rechazos, GustosOut, RechazosOut)
+      )
+    ).
+
+es_respuesta_directa_si_no(Respuesta) :-
+    split_string(Respuesta, " ,.?!;:\t", " ,.?!;:\t", Tokens),
+    Tokens = [Unico],
+    ( Unico = "si"
+    ; Unico = "sí"
+    ; Unico = "no"
     ).
 
 leer_respuesta(Respuesta) :-
