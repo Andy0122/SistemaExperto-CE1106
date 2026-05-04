@@ -41,7 +41,9 @@ es_atributo(A) :- member(A,[
     tecnologia, matematicas, personas, problemas, rutina, arte, ciencia, naturaleza,
     escuchar, hablar, casa, hogar, compu, maquinas, calculo, gente, humanos,
     investigacion, diseno, dibujo, numeros, organizacion, creatividad,
-    exteriores, plantas, oficina, escribir, ensenar, trabajar_bajo_presion, poco_estudio
+    exteriores, plantas, oficina, escribir, ensenar, trabajar_bajo_presion, poco_estudio,
+    publico, leer, memoria, timidez, paciencia, poca_paciencia, 
+    aislamiento, problemas_matematicos, animales, desorden
 ]).
 
 % ------------------------------------------------------------------------------
@@ -83,7 +85,8 @@ diccionario(W) :- member(W,[
     ciencia, investigacion, naturaleza, animales, exteriores, plantas, casa, hogar,
     bueno, buena, habil, excelente, experto, experta, genial, habituado, acostumbrado, genio, crack, facil,
     malo, mala, pesimo, pesima, torpe, terrible, dificil,
-    escuchar, hablar, aprender, salir, dibujar, estudiar, trabajar, estar, trabajar_bajo_presion, presion, estres, poco_estudio
+    escuchar, hablar, aprender, salir, dibujar, estudiar, trabajar, estar, trabajar_bajo_presion, presion, estres, poco_estudio,
+    publico, leer, memoria, timidez, paciencia, poca_paciencia, aislamiento, problemas_matematicos, animales, desorden
 ]).
 
 % ==============================================================================

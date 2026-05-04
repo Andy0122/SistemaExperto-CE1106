@@ -48,21 +48,34 @@ evalua_perfil(no, Atributos, GustosIn, RechazosIn, GustosIn, RechazosOut) :-
 % Ejecuta el motor lógico cruzando restricciones con la Base de Datos.
 % ------------------------------------------------------------------------------
 recomendar_carrera(GustosUsuario, RechazosUsuario, CarreraRecomendada) :-
-    % 1. Extrae una profesión de la BD
-    profesion(CarreraRecomendada, Afinidades, Fortalezas, AntagoniasCarrera),
+    % 1. findall recopila TODAS las carreras que cumplen las condiciones
+    % y las guarda en el formato Coincidencias-NombreCarrera
+    findall(Coincidencias-Carrera,
+            (
+                profesion(Carrera, Afinidades, Fortalezas, AntagoniasCarrera),
+                
+                % RESTRICCIÓN LÓGICA 1: El usuario NO debe detestar lo que la carrera exige
+                \+ interseccion_lista(RechazosUsuario, Afinidades),
+                \+ interseccion_lista(RechazosUsuario, Fortalezas),
+                
+                % RESTRICCIÓN LÓGICA 2: El usuario NO debe gustarle lo que la carrera rechaza
+                \+ interseccion_lista(GustosUsuario, AntagoniasCarrera),
+                
+                % CONDICIÓN DE ÉXITO: Debe haber afinidad comprobada
+                append(Afinidades, Fortalezas, PerfilCarrera),
+                contar_coincidencias(GustosUsuario, PerfilCarrera, Coincidencias),
+                Coincidencias > 0
+            ), 
+            ListaResultados),
     
-    % 2. Une Afinidades y Fortalezas para hacer el perfil completo de la carrera
-    append(Afinidades, Fortalezas, PerfilCarrera),
+    % 2. Verifica que al menos haya encontrado una carrera
+    ListaResultados \= [],
     
-    % RESTRICCIÓN LÓGICA 1: El usuario NO debe detestar lo que la carrera exige
-    \+ interseccion_lista(RechazosUsuario, PerfilCarrera),
+    % 3. keysort ordena la lista de menor a mayor cantidad de coincidencias
+    keysort(ListaResultados, ResultadosOrdenados),
     
-    % RESTRICCIÓN LÓGICA 2: El usuario NO debe gustarle lo que la carrera rechaza
-    \+ interseccion_lista(GustosUsuario, AntagoniasCarrera),
-    
-    % CONDICIÓN DE ÉXITO: Debe haber afinidad comprobada
-    contar_coincidencias(GustosUsuario, PerfilCarrera, Coincidencias),
-    Coincidencias > 0.
+    % 4. reverse le da la vuelta para extraer la de mayor coincidencia
+    reverse(ResultadosOrdenados, [_MaxCoincidencias-CarreraRecomendada | _]).
 
 % ------------------------------------------------------------------------------
 % INTERFAZ CONVERSACIONAL
